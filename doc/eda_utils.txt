@@ -1,0 +1,339 @@
+*eda_utils.txt* EDA tool controller.
+
+Version: 0.1
+Author: k-ota106
+
+==============================================================================
+CONTENTS            *eda_utils-contents*
+
+INTRODUCTION        |eda_utils-introduction|
+COMMANDS            |eda_utils-commands|
+FUNCTIONS           |eda_utils-functions|
+OPTIONS             |eda_utils-options|
+KEYMAPS             |eda_utils-keymaps|
+
+==============================================================================
+INTRODUCTION        *eda_utils-introduction*
+
+*eda_utils* is Vim plugin to execute shell commands frequently used for
+Verilog programmers. You can execute VCS or Questa with LSF.  
+
+Requirement:
+- Vim 7.4 or later
+- It is recommended using Vim 8.2 or NeoVim 0.6 or later.
+  It enables you to view/edit your source code while running your command on
+  a vim-terminal. 
+
+==============================================================================
+INTERFACE           *eda_utils-interface*
+
+------------------------------------------------------------------------------
+COMMANDS            *eda_utils-commands*
+
+---------------------------+--------------------------------------------------------------------------------------
+Vim command                | What you can get (image)
+---------------------------+--------------------------------------------------------------------------------------
+:Vcs[!] <args>             | bsub -q short -R 'rusage[`g:eda_utils_bsub_vcs`=1]     select[type==`g:eda_utils_bsub_host`]' -Is vcs -R [%] <args>
+:Qverilog[!] <args>        | bsub -q short -R 'rusage[`g:eda_utils_bsub_questa`=1]  select[type==`g:eda_utils_bsub_host`]' -Is qverilog [%] <args>
+:Xrun[!] <args>            | bsub -q short -R 'rusage[`g:eda_utils_bsub_xcelium`=1] select[type==`g:eda_utils_bsub_host`]' -Is xrun [%]<args>
+:Bjob <args>               | bsub -q short -R 'rusage[`g:eda_utils_bsub_other`=1]   select[type==`g:eda_utils_bsub_host`]' -Is <args>
+:job <args>                | <args>
+:VLint[!] <args>           | verilint.sh [%] <args>
+:Vlog[!] <args>            | <ModelsimASE>/vlog [%] <args>
+:Vrun[!] <args>            | <ModelsimASE>/vlog [%] <args> -R
+:Vsim <args>               | <ModelsimASE>/vsim <args>
+:CLint[!] <args>           | `clang-check` %
+:CTags                     | ctags --langage=C++ -R
+:CToc                      | Create Table Of Contents by ctags and send it to the location list.
+:VTagsHier                 | ctags --verilog-kinds=-cefnprt -R
+:VTags                     | ctags --verilog-kinds=* -R
+:VToc[hvt][!]              | Create Table Of Contents and send it to the location list.
+:GitDiff [args]            | git diff [args or HEAD]
+:SvnDiff [args]            | svn diff [args or -r HEAD]
+:Bufgrep <args>            | grep <args> <all-buffers-in-vim>
+:MakeTerminal[!]           | Create terminal.
+:DeleteTerminal[!]         | Delete terminal.
+:HiLightSearch             | Search current word with highlighting (|gs|, |gS|).
+:HiLightClear              | Clear highlighting.
+:HiLightToggle             | Toggle highlighting.
+:HiLightRender[!]          | Search and highliht words in the `b:eda_utils_HiLightWords`.
+:HiLightCopy               | Copy buffer local HiLight settings to global.
+:HiLightLoad               | Load HiLight settings from global.
+:ViewTable                 | Split window for a heading and horizontally synchronize with the current window.
+:ShowLoclistOnCurrLine     | Show loclist on/above the current line.
+---------------------------+--------------------------------------------------------------------------------------
+
+Examples:
+>
+        :Vcs
+        :Qverilog! hoge.sv
+        :Bjob make
+        :job ./runme.sh
+        :VLint ../lib_rtl
+        :Vlog
+        :Vrun
+        :GitDiff
+        :GitDiff HEAD~1
+        :Bufgrep hello
+<
+
+
+For |:Vcs| |:Qverilog|, |:Xrun|, |:VLint|, |:Vlog| and |:Vrun|
+
+    - If "!" option is not added, the current buffer is added to the argument.
+    - Systemverilog is enabled.
+    - Current directory is added to search and include path.
+    - .v and .sv extension is searched.
+
+*:Vcs[!]* <args>
+
+    Execute VCS with LSF.
+    `:Vcs` for `test.sv` is expanded as: 
+>
+    bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is \
+        vcs -R -sverilog -y . +libext+.v+.sv +incdir+. test.sv
+<
+
+*:Qverilog[!]* <args>
+
+    Execute Questa with LSF.
+    `:Qverilog` for `test.sv` is expanded as: 
+>
+    bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is \
+        qverilog -sv  -y . +libext+.v+.sv +incdir+. test.sv
+<
+
+*:Xrun[!]* <args>
+
+    Execute Xcelium with LSF.
+    `:Xrun` for `test.sv` is expanded as: 
+>
+    bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is \
+        xrun -sv  -y . +libext+.v+.sv +incdir+. test.sv
+<
+
+*:VLint[!]* <args>
+
+    Execute verilint.sh.
+    `:VLint` for `test.sv` is expanded as: 
+>
+        /home/users5/lsi_ota/bin/verilint.sh a.sv
+<
+
+    If you want to search submodule from other directroies, just add the directory.
+>
+        :VLint ../lib_rtl
+<
+    
+*:Bjob* *:Job* <command>
+
+    `:Bjob` executes `<command>` with LSF.
+>
+        bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is <command>
+<
+
+    `:job` executes `<command>` without LSF.
+    This is same as the `:!<command>`.
+
+*:Vlog* *:Vrun* 
+    Compile and simulate verilog code using Modelsim-ASE.
+    The executable path can be configured as:
+>
+    let g:eda_utils_modelsim_ase = $QUARTUS_ROOTDIR."/../modelsim_ase"
+<
+    If `$HOME/modelsim_ase_work` exists, it is passed to `vlog -work` option.
+    Otherwise, `./work` is created and passed.
+
+    You can create `$HOME/modelsim_ase_work` as following (shell command):
+>
+    $QUARTUS_ROOTDIR/../modelsim_ase/bin/vlib $HOME/modelsim_ase_work
+
+*:CCLint* *:CVLint* *:CVcs* *:CQverilog* *:CVlog* *:CXrun* 
+
+    `[Experimental]`
+    Send log messages on the buffer to QuickFix with an errorformat 
+    for the simulator.
+
+*:MakeTerminal[!]*
+    Required: |has('terminal')|
+
+    Create a vim terminal on the bottom of the current buffer.
+    The layout is same as VSCode.
+    If [!] is used, the cursor is back to the current window.
+
+    The default shell is `bash.` You can configure it by
+>
+        let g:eda_utils_shell = "zsh"
+<
+
+*:DeleteTerminal[!]*
+    Required: |has('terminal')|
+
+    Delete buffers whose `buftype` is `terminal`.
+    Terminals that are modified are not removed,
+    unless the [!] is given.
+
+*:CToc[!]*
+    Crate a table of contents by ctags and send them to a location list.
+
+    - If [!] is used, markers such as "NOTE:" or "FIXME:" or "MARK:" are ignored
+    - TODO: There is no way to customize arguments of ctags.
+
+*:VToc[hvt][!]*
+    Crate a table of contents for verilog and send them to a location list.
+
+    - `Toc` or `Tocv`: create in a vertical window.
+    - `Toch`: create in an horizontal window.
+    - `Toct`: create in a new tab.
+    - If [!] is used, markers such as "NOTE:" or "FIXME:" or "MARK:" are ignored
+
+*:CLint[!]* [args]
+    Do lint check C/C++ code using `g:eda_utils_clint`.
+    Default command is `gcc -c -Wall`
+
+*:CTags*
+
+    Create tags file for C++.
+>
+        ctags --langage=C++ -R
+<
+
+*:VTags*
+
+    Create tags file for Verilog.
+>
+        ctags --verilog-kinds=-cefnprt -R
+<
+*:GitDiff* [args]
+    Run `git diff` for the current buffer. If `args` is ommitted, `HEAD` is used.
+
+*:SvnDiff* [args]
+    Run `svn diff` for the current buffer. If `args` is ommitted, `-r HEAD` is used.
+
+*:HiLightSearch* [range]
+    Add selected text to search register (`@/`) with highlighting.
+    Otherwise, add <cword> to search register (`@/`) with highlighting.
+    If <cword> is already included in the search list, it is removed.
+    If `b:eda_utils_no_HighLight` exists, highlighting is ignored.
+    
+*:HiLightClear*
+    Clear highlights marked by |:HiLightSearch| command.
+    The current mathces are stored to b:eda_utils_HiLightPrev to be reverted
+    by |:HiLightToggle|.
+
+*:HiLightToggle*
+    Toggle highlights.
+
+*:HiLightRender[!]*
+    Search and highliht words in the `b:eda_utils_HiLightWords`.
+    `b:eda_utils_HiLightWords`  is the list of text including regular
+    expression.
+    If [!] is used, `\<` and `\>` are added to each word.
+
+*:HiLightCopy*
+    Copy buffer local HiLight (`b:eda_utils_HiLightPrev`) settings to global (`g:eda_utils_HiLightPrev`).
+
+*:HiLightLoad*
+    Load HiLight settings from global.
+    This command copies `g:eda_utils_HiLightPrev` to `b:eda_utils_HiLightPrev`
+    and call |eda_utils#HiLightToggle()|.
+
+*:ViewTable*
+    Split window for a heading and horizontally synchronize with the current window.
+
+*ShowLoclistOnCurrLine*
+    Show loclist on/above the current line.
+    This command executes `ll <nr>`.
+>
+
+------------------------------------------------------------------------------
+FUNCTIONS           *eda_utils-functions*
+
+eda_utils#MakeTerminal(`"<bang>"`)    *eda_utils#MakeTerminal()*
+    A function version of |:MakeTerminal|.
+
+eda_utils#DeleteTerminal(`"<bang>"`)  *eda_utils#DeleteTerminal()*
+    A function version of |:DeleteTerminal|.
+
+eda_utils#Toc(`"<bang>"`, `...`)        *eda_utils#Toc()*
+    Create a table of contents for verilog.
+
+eda_utils#Run(`mode`, `queue`, `host`, `tool`, `...`)  *eda_utils#Run()*
+    - `mode`:
+        - `bsub`: use LSF
+        - `bash`: use bash
+        - `shell`: use current shell
+    - `queue`: -q XXX
+    - `host`: -R select[type==XXX]
+    - `tool`: -R rusage[XXX=1]
+    - `...`: command and arguments
+
+    By default, this function reuse the window previously invoked by this
+    function. If *g:eda_utils_shell_override* is equal to 1, this function
+    always create a new window.
+
+------------------------------------------------------------------------------
+OPTIONS             *eda_utils-options*
+
+>
+    let g:eda_utils_headersRegexp  = '\v^\s*(module|class|task|function|package)>'
+    let g:eda_utils_footerRegexp   = '\v^\s*(endmodule|endclass|endtask|endfunction|endpackage)>'
+    let g:eda_utils_markerRegexp   = '\v^\s*(//+|\#+)\s*(MARK|TODO|FIXME|NOTE):'
+    let g:eda_utils_toc_autofit    = 0
+    let g:eda_utils_bsub_queue     = 'bsub -q XXX'
+    let g:eda_utils_bsub_host      = 'bsub -R select[type==XXX]'
+    let g:eda_utils_bsub_vcs       = 'bsub -R rusage[XXX=1] for Vcs'
+    let g:eda_utils_bsub_questa    = 'bsub -R rusage[XXX=1] for Qverilog'
+    let g:eda_utils_bsub_xcelium   = 'bsub -R rusage[XXX=1] for Xrun'
+    let g:eda_utils_bsub_other     = 'bsub -R rusage[XXX=1] for Bjob'
+    let g:eda_utils_bsub_mem       = 'bsub -R rusage[mem==XXX]' "(default:4G)
+    let g:eda_utils_bsub_flimit    = 'bsub -F XXX' "(default: 10G)
+    let g:eda_utils_vlint          = "verilator --lint-only -Wall"
+    let g:eda_utils_clint          = "gcc -c -Wall"
+    let g:eda_utils_modelsim_ase   = $QUARTUS_ROOTDIR."/../modelsim_ase"
+    let g:eda_utils_modelsim_ase_work  = $HOME."/modelsim_ase_work"
+    let g:eda_utils_shell          = "zsh"
+    let g:eda_utils_no_HighLight   = 1
+    let g:eda_utils_shell_override = 1
+    let g:eda_utils_no_terminal    = 1
+    let g:eda_utils_verilog_opt    = " -y . +libext+.v+.sv +incdir+."
+    let g:eda_utils_mapleader      = "\<Space>"
+    let g:loaded_gtags_from_eda_utils = 1
+<
+
+------------------------------------------------------------------------------
+KEYMAPS             *eda_utils-keymaps*
+
+<leader> is set to `g:eda_utils_mapleader`.
+if `g:eda_utils_mapleader is not defined, the following keymaps are disabled.
+
+- vnoremap (Visual and Select)
+
+  convert `text` to
+  - <leader>( : `(`text`)`
+  - <leader>" : `"`text`"`
+  - <leader>{ : `{`text`}`
+  - <leader>[ : `[`text`]`
+  - gs, gS : HiLightSearch(0,1) -- Search selected text with highlighting 
+
+- nnoremap (Normal)
+
+  - *gs* : HiLightSearch(1,0) -- Search \<cword\> with highlighting 
+  - *gS* : HiLightSearch(0,0) -- Search <cword> with highlighting 
+  - <leader>i  : :call eda_utils#ShowLoclistOnCurrLine()<CR>
+  - <leader>v  : :call eda_utils#ViewTable()<CR>
+  - <leader>j  : ':Job '
+  - <leader>m  : ':Job makers '
+  - <leader>gf :  :Gtags -f %<CR>
+  - <leader>gd : ':Gtags -a  ' . expand('<cword>') . '<CR>'
+  - <leader>gr : ':Gtags -ar ' . expand('<cword>') . '<CR>'
+  - <leader>gg : ':Gtags -ag ' . expand('<cword>')
+
+- Function key
+  - <F7>  : <ESC>:execute "Ggrep ".expand('<cword>')<CR>
+  - <F8>  : <ESC>:Makers<CR>
+  - <F11> : :make <CR>
+  - <F12> : :grep <cword> .<CR>
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=4:ft=help:norl
