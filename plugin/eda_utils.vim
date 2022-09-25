@@ -162,7 +162,7 @@ if exists("g:eda_utils_mapleader")
     nnoremap <silent> <leader>i :call eda_utils#ShowLoclistOnCurrLine()<CR>
     nnoremap <silent> <leader>v :call eda_utils#ViewTable()<CR>
     nnoremap <expr>   <leader>j ':Job '
-    nnoremap <expr>   <leader>m ':Job makers '
+    nnoremap <expr>   <leader>m ':Makers '
 
     noremap <F7>  <ESC>:execute "Ggrep ".expand('<cword>')<CR>
     noremap <F8>  <ESC>:Makers<CR>
