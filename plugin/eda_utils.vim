@@ -56,7 +56,7 @@ if !exists("g:eda_utils_verilog_opt")
 endif
 
 " args: queue, host, tool
-command! -bang -complete=file -nargs=+ Run
+command! -bang -complete=shellcmd -nargs=+ Run
 \   call eda_utils#Run("bsub", <f-args>)
 
 " args: options to vcs
@@ -72,11 +72,11 @@ command! -bang -complete=file -nargs=* Xrun
 \   silent call eda_utils#Run("bsub", get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_xcelium",""), "xrun -sv", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
 
 " args: shell command
-command! -complete=file -nargs=+ Bjob
+command! -complete=shellcmd -nargs=+ Bjob
 \   silent call eda_utils#Run("bsub", get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), "other", <f-args>)
 
 " args: shell command
-command! -complete=file -nargs=+ Job
+command! -complete=shellcmd -nargs=+ Job
 \   silent call eda_utils#Run("shell", "", "", "", <f-args>)
 
 "-----------------------------------------------------------------------------
