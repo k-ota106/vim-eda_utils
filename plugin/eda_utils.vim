@@ -29,6 +29,12 @@ if !exists("g:eda_utils_HiLightGroups")
     \]
 end
 
+if exists("g:eda_utils_bsub") && executable("bsub")
+    let g:eda_utils_bsub = "bsub"
+else
+    let g:eda_utils_bsub = "srun"
+end
+
 if !exists("g:eda_utils_shell") || !executable(g:eda_utils_shell)
     let g:eda_utils_shell = 'bash'
 endif
@@ -61,19 +67,19 @@ command! -bang -complete=file -nargs=+ Run
 
 " args: options to vcs
 command! -bang -complete=file    -nargs=* Vcs
-\   silent call eda_utils#Run("bsub", get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_vcs",""), "vcs -R -sverilog", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
+\   silent call eda_utils#Run(g:eda_utils_bsub, get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_vcs",""), "vcs -R -sverilog", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
 
 " args: options to qverilog
 command! -bang -complete=file -nargs=* Qverilog
-\   silent call eda_utils#Run("bsub", get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_questa",""), "qverilog -sv", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
+\   silent call eda_utils#Run(g:eda_utils_bsub, get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_questa",""), "qverilog -sv", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
 
 " args: options to xcelium
 command! -bang -complete=file -nargs=* Xrun
-\   silent call eda_utils#Run("bsub", get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_xcelium",""), "xrun -sv", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
+\   silent call eda_utils#Run(g:eda_utils_bsub, get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_xcelium",""), "xrun -sv", g:eda_utils_verilog_opt, "<bang>" == "!" ? "" : expand("%"), <f-args>)
 
 " args: shell command
 command! -complete=file -nargs=+ Bjob
-\   silent call eda_utils#Run("bsub", get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), "other", <f-args>)
+\   silent call eda_utils#Run(g:eda_utils_bsub, get(g:,"eda_utils_bsub_queue",""), get(g:,"eda_utils_bsub_host",""), get(g:,"eda_utils_bsub_other",""), <f-args>)
 
 " args: shell command
 command! -complete=file -nargs=+ Job

@@ -1,6 +1,6 @@
 *eda_utils.txt* EDA tool controller.
 
-Version: 0.1
+Version: 0.2
 Author: k-ota106
 
 ==============================================================================
@@ -16,7 +16,7 @@ KEYMAPS             |eda_utils-keymaps|
 INTRODUCTION        *eda_utils-introduction*
 
 *eda_utils* is Vim plugin to execute shell commands frequently used for
-Verilog programmers. You can execute VCS or Questa with LSF.  
+Verilog programmers. You can execute VCS or Questa with LSF/SLURM.  
 
 Requirement:
 - Vim 7.4 or later
@@ -33,10 +33,14 @@ COMMANDS            *eda_utils-commands*
 ---------------------------+--------------------------------------------------------------------------------------
 Vim command                | What you can get (image)
 ---------------------------+--------------------------------------------------------------------------------------
-:Vcs[!] <args>             | bsub -q short -R 'rusage[`g:eda_utils_bsub_vcs`=1]     select[type==`g:eda_utils_bsub_host`]' -Is vcs -R [%] <args>
-:Qverilog[!] <args>        | bsub -q short -R 'rusage[`g:eda_utils_bsub_questa`=1]  select[type==`g:eda_utils_bsub_host`]' -Is qverilog [%] <args>
-:Xrun[!] <args>            | bsub -q short -R 'rusage[`g:eda_utils_bsub_xcelium`=1] select[type==`g:eda_utils_bsub_host`]' -Is xrun [%]<args>
-:Bjob <args>               | bsub -q short -R 'rusage[`g:eda_utils_bsub_other`=1]   select[type==`g:eda_utils_bsub_host`]' -Is <args>
+:Vcs[!] <args>             | bsub -q `g:eda_utils_bsub_queue` -R 'rusage[`g:eda_utils_bsub_vcs`=1]     select[type==`g:eda_utils_bsub_host`]' -Is vcs -R [%] <args>
+:Vcs[!] <args>             | srun -p `g:eda_utils_bsub_queue` -L         `g:eda_utils_bsub_vcs`        -C          "`g:eda_utils_bsub_host`"      vcs -R [%] <args>
+:Qverilog[!] <args>        | bsub -q `g:eda_utils_bsub_queue` -R 'rusage[`g:eda_utils_bsub_questa`=1]  select[type==`g:eda_utils_bsub_host`]' -Is qverilog [%] <args>
+:Qverilog[!] <args>        | srun -p `g:eda_utils_bsub_queue` -L         `g:eda_utils_bsub_queue`      -C          "`g:eda_utils_bsub_host`"      qverilog [%] <args>
+:Xrun[!] <args>            | bsub -q `g:eda_utils_bsub_queue` -R 'rusage[`g:eda_utils_bsub_xcelium`=1] select[type==`g:eda_utils_bsub_host`]' -Is xrun [%] <args>
+:Xrun[!] <args>            | srun -p `g:eda_utils_bsub_queue` -L         `g:eda_utils_bsub_xcelium`    -C          "`g:eda_utils_bsub_host`"      xrun [%] <args>
+:Bjob <args>               | bsub -q `g:eda_utils_bsub_queue` -R 'rusage[`g:eda_utils_bsub_other`=1]   select[type==`g:eda_utils_bsub_host`]' -Is <args>
+:Bjob <args>               | srun -p `g:eda_utils_bsub_queue` -L         `g:eda_utils_bsub_other`      -C          "`g:eda_utils_bsub_host`"      <args>
 :job <args>                | <args>
 :VLint[!] <args>           | verilint.sh [%] <args>
 :Vlog[!] <args>            | <ModelsimASE>/vlog [%] <args>
@@ -63,6 +67,9 @@ Vim command                | What you can get (image)
 :ShowLoclistOnCurrLine     | Show loclist on/above the current line.
 ---------------------------+--------------------------------------------------------------------------------------
 
+If `g:eda_utils_bsub` is "bsub", each eda tools use "bsub" command.
+Otherwise, each eda tools use "srun" command. 
+
 Examples:
 >
         :Vcs
@@ -87,29 +94,36 @@ For |:Vcs| |:Qverilog|, |:Xrun|, |:VLint|, |:Vlog| and |:Vrun|
 
 *:Vcs[!]* <args>
 
-    Execute VCS with LSF.
+    Execute VCS with LSF/SLURM.
     `:Vcs` for `test.sv` is expanded as: 
 >
     bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is \
+        vcs -R -sverilog -y . +libext+.v+.sv +incdir+. test.sv
+
+    srun -p short -L ??? --mem 4G -C "???" \
         vcs -R -sverilog -y . +libext+.v+.sv +incdir+. test.sv
 <
 
 *:Qverilog[!]* <args>
 
-    Execute Questa with LSF.
+    Execute Questa with LSF/SLURM.
     `:Qverilog` for `test.sv` is expanded as: 
 >
     bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is \
         qverilog -sv  -y . +libext+.v+.sv +incdir+. test.sv
+
+    srun ...
 <
 
 *:Xrun[!]* <args>
 
-    Execute Xcelium with LSF.
+    Execute Xcelium with LSF/SLURM.
     `:Xrun` for `test.sv` is expanded as: 
 >
     bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is \
         xrun -sv  -y . +libext+.v+.sv +incdir+. test.sv
+
+    srun ...
 <
 
 *:VLint[!]* <args>
@@ -127,12 +141,14 @@ For |:Vcs| |:Qverilog|, |:Xrun|, |:VLint|, |:Vlog| and |:Vrun|
     
 *:Bjob* *:Job* <command>
 
-    `:Bjob` executes `<command>` with LSF.
+    `:Bjob` executes `<command>` with LSF/SLURM.
 >
         bsub -q short -R 'rusage[mem=4G:???=1] select[type==???]' -F10G -Is <command>
+
+        srun -p short -L ??? --mem 4G -C "???" <command>
 <
 
-    `:job` executes `<command>` without LSF.
+    `:job` executes `<command>` without LSF/SLURM.
     This is same as the `:!<command>`.
 
 *:Vlog* *:Vrun* 
@@ -261,6 +277,7 @@ eda_utils#Toc(`"<bang>"`, `...`)        *eda_utils#Toc()*
 eda_utils#Run(`mode`, `queue`, `host`, `tool`, `...`)  *eda_utils#Run()*
     - `mode`:
         - `bsub`: use LSF
+        - `srun`: use SLURM
         - `bash`: use bash
         - `shell`: use current shell
     - `queue`: -q XXX
@@ -280,14 +297,22 @@ OPTIONS             *eda_utils-options*
     let g:eda_utils_footerRegexp   = '\v^\s*(endmodule|endclass|endtask|endfunction|endpackage)>'
     let g:eda_utils_markerRegexp   = '\v^\s*(//+|\#+)\s*(MARK|TODO|FIXME|NOTE):'
     let g:eda_utils_toc_autofit    = 0
+    let g:eda_utils_bsub           = 'bsub' "To use LSF (defualt is SLURM)
     let g:eda_utils_bsub_queue     = 'bsub -q XXX'
+    let g:eda_utils_bsub_queue     = 'srun -p XXX'
     let g:eda_utils_bsub_host      = 'bsub -R select[type==XXX]'
+    let g:eda_utils_bsub_host      = 'srun -C "XXX"'
     let g:eda_utils_bsub_vcs       = 'bsub -R rusage[XXX=1] for Vcs'
+    let g:eda_utils_bsub_vcs       = 'srun -L XXX for Vcs'
     let g:eda_utils_bsub_questa    = 'bsub -R rusage[XXX=1] for Qverilog'
+    let g:eda_utils_bsub_questa    = 'srun -L XXX for Qverilog'
     let g:eda_utils_bsub_xcelium   = 'bsub -R rusage[XXX=1] for Xrun'
+    let g:eda_utils_bsub_xcelium   = 'srun -L XXX for Xrun'
     let g:eda_utils_bsub_other     = 'bsub -R rusage[XXX=1] for Bjob'
+    let g:eda_utils_bsub_other     = 'srun -L XXX for Bjob'     "when XXX != "" 
     let g:eda_utils_bsub_mem       = 'bsub -R rusage[mem==XXX]' "(default:4G)
-    let g:eda_utils_bsub_flimit    = 'bsub -F XXX' "(default: 10G)
+    let g:eda_utils_bsub_mem       = 'srun --mem XXX'           "(default:4G)
+    let g:eda_utils_bsub_flimit    = 'bsub -F XXX' "(default: 10G) "not supported by srun
     let g:eda_utils_vlint          = "verilator --lint-only -Wall"
     let g:eda_utils_clint          = "gcc -c -Wall"
     let g:eda_utils_modelsim_ase   = $QUARTUS_ROOTDIR."/../modelsim_ase"
