@@ -1,6 +1,6 @@
 *eda_utils.txt* EDA tool controller.
 
-Version: 0.2
+Version: 0.3
 Author: k-ota106
 
 ==============================================================================
@@ -69,6 +69,9 @@ Vim command                | What you can get (image)
 
 If `g:eda_utils_bsub` is "bsub", each eda tools use "bsub" command.
 Otherwise, each eda tools use "srun" command. 
+
+If `g:eda_utils_bsub_tool_as_host` is set to 1, the arguments of -L option 
+are merged with the -C option. e.g. `-L AAA -C BBB` => `-C (AAA)&(BBB)`.
 
 Examples:
 >
@@ -293,10 +296,11 @@ eda_utils#Run(`mode`, `queue`, `host`, `tool`, `...`)  *eda_utils#Run()*
 OPTIONS             *eda_utils-options*
 
 >
-    let g:eda_utils_headersRegexp  = '\v^\s*(module|class|task|function|package)>'
-    let g:eda_utils_footerRegexp   = '\v^\s*(endmodule|endclass|endtask|endfunction|endpackage)>'
-    let g:eda_utils_markerRegexp   = '\v^\s*(//+|\#+)\s*(MARK|TODO|FIXME|NOTE):'
-    let g:eda_utils_toc_autofit    = 0
+    let g:eda_utils_headersRegexp       = '\v^\s*(module|class|task|function|package)>'
+    let g:eda_utils_footerRegexp        = '\v^\s*(endmodule|endclass|endtask|endfunction|endpackage)>'
+    let g:eda_utils_markerRegexp        = '\v^\s*(//+|\#+)\s*(MARK|TODO|FIXME|NOTE):'
+    let g:eda_utils_toc_autofit         = 0
+    let g:eda_utils_bsub_tool_as_host   = 0
     let g:eda_utils_bsub           = 'bsub' "To use LSF (defualt is SLURM)
     let g:eda_utils_bsub_queue     = 'bsub -q XXX'
     let g:eda_utils_bsub_queue     = 'srun -p XXX'

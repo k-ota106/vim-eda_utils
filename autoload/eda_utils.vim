@@ -52,14 +52,22 @@ function! eda_utils#Run(mode, queue, host, tool, ...)
         \   get(g:,"eda_utils_bsub_mem","4G") .
         \   ":" . a:tool . "=1] select[type==" . a:host . "]' -F" . 
         \   get(g:,"eda_utils_bsub_flimit","10G") . " -Is"
-    elseif a:mode == "srun" && a:queue != "" && a:host != ""
-        let cmd = "srun -p " . a:queue . " --mem " . 
-        \   get(g:,"eda_utils_bsub_mem","4G") .
-        \   " -C \"" . a:host . "\""
-
+    elseif a:mode == "srun" && a:host != ""
         if a:tool != ""
-            let cmd = cmd . " -L " . a:tool
+            if get(g:,"eda_utils_bsub_tool_as_host",0) == 0
+                let add_cmd = " -C '(" . a:host . ")' -L '" . a:tool . "'"
+            else
+                let add_cmd = " -C '(" . a:host . ")&(" . a:tool . ")'"
+            endif
+        else
+            let add_cmd = " -C '(" . a:host . ")'"
         endif
+
+        if a:queue != ""
+            let add_cmd = add_cmd . " -p " . a:queue
+        endif
+
+        let cmd = "srun --mem " .  get(g:,"eda_utils_bsub_mem","4G") .  add_cmd
     else
         let cmd = ""
     endif
