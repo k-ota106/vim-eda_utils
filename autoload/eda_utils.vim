@@ -11,7 +11,7 @@ function! eda_utils#MakeTerminal(bang)
     wincmd j
     resize 10
     if has('nvim')
-        terminal g:eda_utils_shell
+        execute ":terminal " . g:eda_utils_shell
     else
         execute ":terminal ++curwin ++close " . g:eda_utils_shell
     endif
